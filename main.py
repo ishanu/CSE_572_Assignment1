@@ -328,7 +328,7 @@ resultDf['Over Night percentage time in hypoglycemia level 1 (CGM < 70 mg/dL)'] 
 resultDf['Over Night percentage time in hypoglycemia level 2 (CGM < 54 mg/dL)'] = [
     output(overNightHypoglycemiaLevel2Manual, manualModeDaysCount), output(overNightHypoglycemiaLevel2Auto, autoModeDaysCount)]
 
-resultDf['Day Time Percentage time in hyperglycemia (CGM > 180 mg/dL)'] = [output(dayTimeHyperglycemiaManual, autoModeDaysCount),
+resultDf['Day Time Percentage time in hyperglycemia (CGM > 180 mg/dL)'] = [output(dayTimeHyperglycemiaManual, manualModeDaysCount),
                                                                             output(dayTimeHyperglycemiaAuto, autoModeDaysCount)]
 resultDf['Day Time percentage of time in hyperglycemia critical (CGM > 250 mg/dL)'] = [
     output(dayTimeHyperglycemiaCriticalManual, manualModeDaysCount), output(dayTimeHyperglycemiaCriticalAuto, autoModeDaysCount)]
