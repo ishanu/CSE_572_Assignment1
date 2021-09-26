@@ -353,7 +353,7 @@ resultDf['Whole Day percentage time in hypoglycemia level 1 (CGM < 70 mg/dL)'] =
     output(wholeDayHypoglycemiaLevel1Manual, manualModeDaysCount), output(wholeDayHypoglycemiaLevel1Auto, autoModeDaysCount)]
 resultDf['Whole Day percentage time in hypoglycemia level 2 (CGM < 54 mg/dL)'] = [
     output(wholeDayHypoglycemiaLevel2Manual, manualModeDaysCount), output(wholeDayHypoglycemiaLevel2Auto, autoModeDaysCount)]
-resultDf['Whole Day percentage time in hypoglycemia level 2 (CGM < 54 mg/dL)'] = [1.1,1.1]
+resultDf['dummy'] = [1.1,1.1]
 
 resultDf.set_index('Modes', inplace=True)
 
