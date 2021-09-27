@@ -1,18 +1,23 @@
 import pandas as pd
 
-dfCGM = pd.read_csv("CGMData.csv", parse_dates=[['Date', 'Time']], keep_date_col=True)
-dfInsulin = pd.read_csv("InsulinData.csv", parse_dates=[['Date', 'Time']], keep_date_col=True)
+#read the csv file
+dfCGM = pd.read_csv("CGMData.csv", low_memory=False, parse_dates=[['Date', 'Time']], keep_date_col=True)
+dfInsulin = pd.read_csv("InsulinData.csv", low_memory= False, parse_dates=[['Date', 'Time']], keep_date_col=True)
 
+#finding the auto mode start time
 autoModeStartDateTime = dfInsulin[dfInsulin['Alarm'] == 'AUTO MODE ACTIVE PLGM OFF']['Date_Time']
 
+#dropping the missing data for Sensor Glucose
 dfCGM.dropna(subset=['Sensor Glucose (mg/dL)'], inplace=True)
+
 dfCGM['Time'] = pd.to_datetime(dfCGM['Time'])
 
+#dividing the data into automode and manualmode
 dfCGMManualMode = dfCGM[dfCGM['Date_Time'] < autoModeStartDateTime.iloc[1]]
 dfCGMAutoMode = dfCGM[dfCGM['Date_Time'] >= autoModeStartDateTime.iloc[1]]
 
+#grouping the data by date
 cgmDataGroupedByDate = dfCGMManualMode.groupby('Date')
-# print(dfCGMManualMode.groupby("Date")["Time"].count())
 
 overNightHyperglycemiaManual = []
 overNightHyperglycemiaCriticalManual = []
@@ -37,11 +42,12 @@ wholeDayHypoglycemiaLevel2Manual = []
 
 manualModeDaysCount = 0
 
+# traversing through the manual mode dates
 for element, frame in cgmDataGroupedByDate:
 
+    # calculating only over those days which has minimum 80 percent of 288 data points. ie 231 to 288
     if 231 < len(frame) <= 288:
         manualModeDaysCount += 1
-        # print(len((frame)))
         overNightFrame = frame[
             (frame['Time'] < pd.to_datetime('06:00:00')) & (frame['Time'] >= pd.to_datetime('00:00:00'))]
         dayTimeFrame = frame[
@@ -50,96 +56,58 @@ for element, frame in cgmDataGroupedByDate:
         wholeDayFrame = frame[
             (frame['Time'] >= pd.to_datetime('00:00:00')) & (frame['Time'] <= pd.to_datetime('23:59:59'))]
 
-        overNightHyperglycemiaManual.append((len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] > 180]) / 288))
+        # dividing by 288 * 1.0 instead of 288 to convert the number to float
+        overNightHyperglycemiaManual.append((len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] > 180]) / (288 * 1.0)))
 
         overNightHyperglycemiaCriticalManual.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] > 250]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] > 250]) / (288 * 1.0)))
 
         overNightInRangeManual.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / (288 * 1.0)))
 
         overNightInRangeSecondaryManual.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / (288 * 1.0)))
 
         overNightHypoglycemiaLevel1Manual.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] < 70]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] < 70]) / (288 * 1.0)))
 
         overNightHypoglycemiaLevel2Manual.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] < 54]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] < 54]) / (288 * 1.0)))
 
-        dayTimeHyperglycemiaManual.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] > 180]) / 288))
+        dayTimeHyperglycemiaManual.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] > 180]) / (288 * 1.0)))
 
         dayTimeHyperglycemiaCriticalManual.append(
-            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] > 250]) / 288))
+            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] > 250]) / (288 * 1.0)))
 
         dayTimeInRangeManual.append(
-            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / 288))
+            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / (288 * 1.0)))
 
         dayTimeInRangeSecondaryManual.append(
-            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / 288))
+            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / (288 * 1.0)))
 
-        dayTimeHypoglycemiaLevel1Manual.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] < 70]) / 288))
+        dayTimeHypoglycemiaLevel1Manual.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] < 70]) / (288 * 1.0)))
 
-        dayTimeHypoglycemiaLevel2Manual.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] < 54]) / 288))
+        dayTimeHypoglycemiaLevel2Manual.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] < 54]) / (288 * 1.0)))
 
-        wholeDayHyperglycemiaManual.append((len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] > 180]) / 288))
+        wholeDayHyperglycemiaManual.append((len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] > 180]) / (288 * 1.0)))
 
         wholeDayHyperglycemiaCriticalManual.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] > 250]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] > 250]) / (288 * 1.0)))
 
         wholeDayInRangeManual.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / (288 * 1.0)))
 
         wholeDayInRangeSecondaryManual.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / (288 * 1.0)))
 
         wholeDayHypoglycemiaLevel1Manual.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] < 70]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] < 70]) / (288 * 1.0)))
 
         wholeDayHypoglycemiaLevel2Manual.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] < 54]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] < 54]) / (288 * 1.0)))
 
+# grouping the auto mode data by dates
 cgmDataGroupedByDate = dfCGMAutoMode.groupby('Date')
-
-'''
-print('overnight manual')
-print((sum(overNightHyperglycemiaManual) / count) * 100)
-
-print((sum(overNightHyperglycemiaCriticalManual) / count) * 100)
-
-print((sum(overNightInRangeManual) / count) * 100)
-
-print((sum(overNightInRangeSecondaryManual) / count) * 100)
-
-print((sum(overNightHypoglycemiaLevel1Manual) / count) * 100)
-
-print((sum(overNightHypoglycemiaLevel2Manual) / count) * 100)
-
-print('dayTime manual')
-print((sum(dayTimeHyperglycemiaManual) / count) * 100)
-
-print((sum(dayTimeHyperglycemiaCriticalManual) / count) * 100)
-
-print((sum(dayTimeInRangeManual) / count) * 100)
-
-print((sum(dayTimeInRangeSecondaryManual) / count) * 100)
-
-print((sum(dayTimeHypoglycemiaLevel1Manual) / count) * 100)
-
-print((sum(dayTimeHypoglycemiaLevel2Manual) / count) * 100)
-
-print('whole day')
-print((sum(wholeDayHyperglycemiaManual) / count) * 100)
-
-print((sum(wholeDayHyperglycemiaCriticalManual) / count) * 100)
-
-print((sum(wholeDayInRangeManual) / count) * 100)
-
-print((sum(wholeDayInRangeSecondaryManual) / count) * 100)
-
-print((sum(wholeDayHypoglycemiaLevel1Manual) / count) * 100)
-
-print((sum(wholeDayHypoglycemiaLevel2Manual) / count) * 100)'''
 
 overNightHyperglycemiaAuto = []
 overNightHyperglycemiaCriticalAuto = []
@@ -162,32 +130,14 @@ wholeDayInRangeSecondaryAuto = []
 wholeDayHypoglycemiaLevel1Auto = []
 wholeDayHypoglycemiaLevel2Auto = []
 
-# idhar
-'''res = []
-for key, subset in cgmDataGroupedByDate:
-    total_count = len(subset)
-    res.append(((key), total_count))
-res_automode = pd.DataFrame(res, columns=['Date', 'DataCounts'])
-res_automode = pd.merge(dfCGMAutoMode,
-                       res_automode[['Date']][(res_automode['DataCounts'] > 231) & (res_automode['DataCounts'] <= 288)],
-                       on='Date')
-res_automode['Date'] = pd.to_datetime(res_automode['Date'], format='%m/%d/%Y')
-res_automode = res_automode[(res_automode['DataCounts'] > 231) & (res_automode['DataCounts'] <= 288)]
-resGroupedByDate = res_automode.groupby('Date')'''
-'''res = []
-count = 0
-for key, frame in cgmDataGroupedByDate:
-    if 231 < len(frame) <= 288:
-        count = count + len(frame)
-
-        res.append(((key), len(frame)))'''
-
 autoModeDaysCount = 0
+
+# traversing through the auto mode dates
 for element, frame in cgmDataGroupedByDate:
 
+    # calculating only over those days which has minimum 80 percent of 288 data points. ie 231 to 288
     if 231 < len(frame) <= 288:
         autoModeDaysCount += 1
-        # print(len((frame)))
         overNightFrame = frame[
             (frame['Time'] < pd.to_datetime('06:00:00')) & (frame['Time'] >= pd.to_datetime('00:00:00'))]
         dayTimeFrame = frame[
@@ -196,96 +146,57 @@ for element, frame in cgmDataGroupedByDate:
         wholeDayFrame = frame[
             (frame['Time'] >= pd.to_datetime('00:00:00')) & (frame['Time'] <= pd.to_datetime('23:59:59'))]
 
-        overNightHyperglycemiaAuto.append((len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] > 180]) / 288))
+
+        # dividing by 288 * 1.0 instead of 288 to convert the number to float
+        overNightHyperglycemiaAuto.append((len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] > 180]) / (288 * 1.0)))
 
         overNightHyperglycemiaCriticalAuto.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] > 250]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] > 250]) / (288 * 1.0)))
 
         overNightInRangeAuto.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / (288 * 1.0)))
 
         overNightInRangeSecondaryAuto.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / (288 * 1.0)))
 
         overNightHypoglycemiaLevel1Auto.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] < 70]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] < 70]) / (288 * 1.0)))
 
         overNightHypoglycemiaLevel2Auto.append(
-            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] < 54]) / 288))
+            (len(overNightFrame[overNightFrame['Sensor Glucose (mg/dL)'] < 54]) / (288 * 1.0)))
 
-        dayTimeHyperglycemiaAuto.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] > 180]) / 288))
+        dayTimeHyperglycemiaAuto.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] > 180]) / (288 * 1.0)))
 
         dayTimeHyperglycemiaCriticalAuto.append(
-            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] > 250]) / 288))
+            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] > 250]) / (288 * 1.0)))
 
         dayTimeInRangeAuto.append(
-            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / 288))
+            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / (288 * 1.0)))
 
         dayTimeInRangeSecondaryAuto.append(
-            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / 288))
+            (len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / (288 * 1.0)))
 
-        dayTimeHypoglycemiaLevel1Auto.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] < 70]) / 288))
+        dayTimeHypoglycemiaLevel1Auto.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] < 70]) / (288 * 1.0)))
 
-        dayTimeHypoglycemiaLevel2Auto.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] < 54]) / 288))
+        dayTimeHypoglycemiaLevel2Auto.append((len(dayTimeFrame[dayTimeFrame['Sensor Glucose (mg/dL)'] < 54]) / (288 * 1.0)))
 
-        wholeDayHyperglycemiaAuto.append((len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] > 180]) / 288))
+        wholeDayHyperglycemiaAuto.append((len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] > 180]) / (288 * 1.0)))
 
         wholeDayHyperglycemiaCriticalAuto.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] > 250]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] > 250]) / (288 * 1.0)))
 
         wholeDayInRangeAuto.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'].between(70, 180, inclusive=True)]) / (288 * 1.0)))
 
         wholeDayInRangeSecondaryAuto.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'].between(70, 150, inclusive=True)]) / (288 * 1.0)))
 
         wholeDayHypoglycemiaLevel1Auto.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] < 70]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] < 70]) / (288 * 1.0)))
 
         wholeDayHypoglycemiaLevel2Auto.append(
-            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] < 54]) / 288))
+            (len(wholeDayFrame[wholeDayFrame['Sensor Glucose (mg/dL)'] < 54]) / (288 * 1.0)))
 
-
-
-
-print('overnight auto')
-print((sum(overNightHyperglycemiaAuto) / autoModeDaysCount) * 100)
-
-print((sum(overNightHyperglycemiaCriticalAuto) / autoModeDaysCount) * 100)
-
-print((sum(overNightInRangeAuto) / autoModeDaysCount) * 100)
-
-print((sum(overNightInRangeSecondaryAuto) / autoModeDaysCount) * 100)
-
-print((sum(overNightHypoglycemiaLevel1Auto) / autoModeDaysCount) * 100)
-
-print((sum(overNightHypoglycemiaLevel2Auto) / autoModeDaysCount) * 100)
-
-print('dayTime auto')
-print((sum(dayTimeHyperglycemiaAuto) / autoModeDaysCount) * 100)
-
-print((sum(dayTimeHyperglycemiaCriticalAuto) / autoModeDaysCount) * 100)
-
-print((sum(dayTimeInRangeAuto) / autoModeDaysCount) * 100)
-
-print((sum(dayTimeInRangeSecondaryAuto) / autoModeDaysCount) * 100)
-
-print((sum(dayTimeHypoglycemiaLevel1Auto) / autoModeDaysCount) * 100)
-
-print((sum(dayTimeHypoglycemiaLevel2Auto) / autoModeDaysCount) * 100)
-
-print('whole day auto')
-print((sum(wholeDayHyperglycemiaAuto) / autoModeDaysCount) * 100)
-
-print((sum(wholeDayHyperglycemiaCriticalAuto) / autoModeDaysCount) * 100)
-
-print((sum(wholeDayInRangeAuto) / autoModeDaysCount) * 100)
-
-print((sum(wholeDayInRangeSecondaryAuto) / autoModeDaysCount) * 100)
-
-print((sum(wholeDayHypoglycemiaLevel1Auto) / autoModeDaysCount) * 100)
-
-print((sum(wholeDayHypoglycemiaLevel2Auto) / autoModeDaysCount) * 100)
 
 column_names = ['Modes',
                 'Over Night Percentage time in hyperglycemia (CGM > 180 mg/dL)',
@@ -310,11 +221,11 @@ column_names = ['Modes',
 resultDf = pd.DataFrame(columns=column_names)
 resultDf['Modes'] = ['Manual Mode', 'Auto Mode']
 
-
+#function to find the final percentage
 def output(listValue, daysCount):
     return round((sum(listValue) / daysCount) * 100, 2)
 
-
+# creating the csv file
 resultDf['Over Night Percentage time in hyperglycemia (CGM > 180 mg/dL)'] = [output(overNightHyperglycemiaManual, manualModeDaysCount),
                                                                               output(overNightHyperglycemiaAuto, autoModeDaysCount)]
 resultDf['Over Night percentage of time in hyperglycemia critical (CGM > 250 mg/dL)'] = [
